@@ -84,6 +84,13 @@ function Request(url, options, f, retryConfig) {
    */
   this.retryStrategy = _.isFunction(options.retryStrategy) ? options.retryStrategy : RetryStrategies.HTTPOrNetworkError;
 
+
+    /**
+     * Return adjusted url if the request to call
+     * @type {Function} (err, response) -> String
+     */
+  this.dnsResolver = _.isFunction(options.dnsResolver) ? options.dnsResolver :function(url){return url; };
+
   /**
    * Return a number representing how long request-retry should wait before trying again the request
    * @type {Boolean} (err, response, body) -> Number
@@ -120,8 +127,11 @@ Request.request = request;
 Request.prototype._tryUntilFail = function () {
   this.maxAttempts--;
   this.attempts++;
+  var options =  extend(true,{},this.options);
+    var url = this.dnsResolver(options.url);
+    options.url=url;
 
-  this._req = Request.request(this.options, function (err, response, body) {
+    this._req = Request.request(options, function (err, response, body) {
     if (response) {
       response.attempts = this.attempts;
     }
