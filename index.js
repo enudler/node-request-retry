@@ -46,13 +46,13 @@ function makePromise(requestInstance, promiseFactoryFn) {
 
 function Request(url, options, f, retryConfig) {
   // ('url')
-  if(_.isString(url)){
+  if (_.isString(url)) {
     // ('url', f)
-    if(_.isFunction(options)){
+    if (_.isFunction(options)) {
       f = options;
     }
 
-    if(!_.isObject(options)){
+    if (!_.isObject(options)) {
       options = {};
     }
 
@@ -60,8 +60,8 @@ function Request(url, options, f, retryConfig) {
     options.url = url;
   }
 
-  if(_.isObject(url)){
-    if(_.isFunction(options)){
+  if (_.isObject(url)) {
+    if (_.isFunction(options)) {
       f = options;
     }
     options = url;
@@ -85,17 +85,21 @@ function Request(url, options, f, retryConfig) {
   this.retryStrategy = _.isFunction(options.retryStrategy) ? options.retryStrategy : RetryStrategies.HTTPOrNetworkError;
 
 
-    /**
-     * Return adjusted url if the request to call
-     * @type {Function} (err, response) -> String
-     */
-  this.dnsResolver = _.isFunction(options.dnsResolver) ? options.dnsResolver :function(url){return url; };
+  /**
+   * Return adjusted url if the request to call
+   * @type {Function} (err, response) -> String
+   */
+  this.addressResolver = _.isFunction(options.addressResolver) ? options.addressResolver : function (url) {
+      return url;
+    };
 
   /**
    * Return a number representing how long request-retry should wait before trying again the request
    * @type {Boolean} (err, response, body) -> Number
    */
-  this.delayStrategy = _.isFunction(options.delayStrategy) ? options.delayStrategy : function() { return this.retryDelay; };
+  this.delayStrategy = _.isFunction(options.delayStrategy) ? options.delayStrategy : function () {
+      return this.retryDelay;
+    };
 
   this._timeout = null;
   this._req = null;
@@ -127,11 +131,10 @@ Request.request = request;
 Request.prototype._tryUntilFail = function () {
   this.maxAttempts--;
   this.attempts++;
-  var options =  extend(true,{},this.options);
-    var url = this.dnsResolver(options.url);
-    options.url=url;
+  var url = this.addressResolver(this.options.url);
+  this.options.url = url;
 
-    this._req = Request.request(options, function (err, response, body) {
+  this._req = Request.request(this.options, function (err, response, body) {
     if (response) {
       response.attempts = this.attempts;
     }
@@ -154,14 +157,14 @@ Request.prototype.abort = function () {
 
 // expose request methods from RequestRetry
 ['end', 'on', 'emit', 'once', 'setMaxListeners', 'start', 'removeListener', 'pipe', 'write'].forEach(function (requestMethod) {
-  Request.prototype[requestMethod] = function exposedRequestMethod () {
+  Request.prototype[requestMethod] = function exposedRequestMethod() {
     return this._req[requestMethod].apply(this._req, arguments);
   };
 });
 
 // expose promise methods
 ['then', 'catch', 'finally', 'fail', 'done'].forEach(function (promiseMethod) {
-  Request.prototype[promiseMethod] = function exposedPromiseMethod () {
+  Request.prototype[promiseMethod] = function exposedPromiseMethod() {
     if (this._callback) {
       throw new Error('A callback was provided but waiting a promise, use only one pattern');
     }
@@ -180,13 +183,13 @@ function Factory(url, options, f) {
 function makeHelper(obj, verb) {
   obj[verb] = function helper(url, options, f) {
     // ('url')
-    if(_.isString(url)){
+    if (_.isString(url)) {
       // ('url', f)
-      if(_.isFunction(options)){
+      if (_.isFunction(options)) {
         f = options;
       }
 
-      if(!_.isObject(options)){
+      if (!_.isObject(options)) {
         options = {};
       }
 
@@ -194,8 +197,8 @@ function makeHelper(obj, verb) {
       options.url = url;
     }
 
-    if(_.isObject(url)){
-      if(_.isFunction(options)){
+    if (_.isObject(url)) {
+      if (_.isFunction(options)) {
         f = options;
       }
       options = url;
@@ -209,13 +212,13 @@ function makeHelper(obj, verb) {
 function defaults(defaultOptions, defaultF) {
   var factory = function (options, f) {
     if (typeof options === "string") {
-      options = { uri: options };
+      options = {uri: options};
     }
-    return Factory.apply(null, [ extend(true, {}, defaultOptions, options), f || defaultF ]);
+    return Factory.apply(null, [extend(true, {}, defaultOptions, options), f || defaultF]);
   };
 
   factory.defaults = function (newDefaultOptions, newDefaultF) {
-    return defaults.apply(null, [ extend(true, {}, defaultOptions, newDefaultOptions), newDefaultF || defaultF ]);
+    return defaults.apply(null, [extend(true, {}, defaultOptions, newDefaultOptions), newDefaultF || defaultF]);
   };
 
   factory.Request = Request;
